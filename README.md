@@ -39,4 +39,4 @@ This code is provided as open source. Please refer to the license file for more 
 
 ## Author
 
-[Link to GitHub Profile](https://github.com/koko1928)
+[Toyama Yusuke (koko1928)](https://github.com/koko1928)
