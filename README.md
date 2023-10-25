@@ -1,6 +1,7 @@
 # File Security Defender
 
-![File Security Defender](https://github.com/koko1928/gakkou/assets/131319857/3b079435-cfd7-4111-95fb-247d6aa95af9)
+<img src="https://github.com/koko1928/gakkou/assets/131319857/3b079435-cfd7-4111-95fb-247d6aa95af9" width="500px">
+
 
 File Security Defender is a file security application created in Python. This application provides tools for encrypting, signing, and decrypting files, helping to enhance the security of your files.
 
