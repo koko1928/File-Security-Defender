@@ -1,3 +1,8 @@
+
+# Author: Yusuke Toyama <Ym5saGJtTmhkQT09@protonmail.com>
+# Copyright (c)  2023 Yusuke Toyama
+# License: MIT License
+
 from setuptools import setup, find_packages
 import os
 
