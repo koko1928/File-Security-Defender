@@ -35,16 +35,16 @@ class FileSecurityDefender:
         logging.basicConfig(filename=log_filename, level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     def setup_ui(self):
-        self.upload_button = tk.Button(self.root, text="アップロードファイル", command=self.upload_file)
+        self.upload_button = tk.Button(self.root, text="Upload File", command=self.upload_file)
         self.upload_button.pack()
 
-        self.encrypt_button = tk.Button(self.root, text="暗号化ファイル", state=tk.DISABLED, command=self.encrypt_file)
+        self.encrypt_button = tk.Button(self.root, text="Encrypt File", state=tk.DISABLED, command=self.encrypt_file)
         self.encrypt_button.pack()
 
-        self.sign_button = tk.Button(self.root, text="署名ファイル", state=tk.DISABLED, command=self.sign_file)
+        self.sign_button = tk.Button(self.root, text="Sign File", state=tk.DISABLED, command=self.sign_file)
         self.sign_button.pack()
 
-        self.download_button = tk.Button(self.root, text="ダウンロードファイル", state=tk.DISABLED, command=self.download_file)
+        self.download_button = tk.Button(self.root, text="Download File", state=tk.DISABLED, command=self.download_file)
         self.download_button.pack()
 
         self.filename_label = tk.Label(self.root, text="")
@@ -59,18 +59,15 @@ class FileSecurityDefender:
                 else:
                     self.generate_key_pair(self.password)
             else:
-                self.log_error("強力なパスワードを設定してください。")
+                self.log_error("Please set a strong password.")
                 sys.exit(1)
-        except Exception as e:
-            self.log_error(f"キーペアのロード/生成中にエラーが発生しました: {str(e)}")
-            sys.exit(1)
 
     def get_secure_password(self):
-        password = askstring("パスワード入力", "パスワードを入力してください: ", show='*')
+        password = askstring("Password Input", "Please enter your password: ", show='*')
         if self.is_strong_password(password):
             return password
         else:
-            self.log_error("強力なパスワードを設定してください。")
+            self.log_error("Please set a strong password.")
             return None
 
     def is_strong_password(self, password):
@@ -115,7 +112,7 @@ class FileSecurityDefender:
 
             self.backup_key(password)
         except Exception as e:
-            self.log_error(f"キーペアの生成中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred during key pair generation: {str(e)}")
             sys.exit(1)
 
     def load_key(self, password):
@@ -129,7 +126,7 @@ class FileSecurityDefender:
                 )
             self.private_key = private_key
         except Exception as e:
-            self.log_error(f"秘密鍵のロード中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred while loading the private key: {str(e)}")
             sys.exit(1)
 
     def backup_key(self, password):
@@ -161,17 +158,17 @@ class FileSecurityDefender:
                 with open(key_backup_file, "wb") as key_file:
                     key_file.write(pem)
         except Exception as e:
-            self.log_error(f"バックアップに失敗しました: {str(e)}")
+            self.log_error(f"Backup failed: {str(e)}")
 
     def upload_file(self):
         try:
             file_path = filedialog.askopenfilename()
             if file_path:
                 self.selected_file = file_path
-                self.filename_label.config(text=f"選択したファイル: {file_path}")
+                self.filename_label.config(text=f"Selected File: {file_path}")
                 self.encrypt_button.config(state=tk.NORMAL)
         except Exception as e:
-            self.log_error(f"ファイルのアップロード中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred during file upload: {str(e)}")
 
     def encrypt_file(self):
         try:
@@ -183,7 +180,7 @@ class FileSecurityDefender:
                     encrypted_file.write(encrypted_data)
                 self.sign_button.config(state=tk.NORMAL)
         except Exception as e:
-            self.log_error(f"ファイルの暗号化中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred during file encryption: {str(e)}")
 
     def sign_file(self):
         try:
@@ -201,7 +198,7 @@ class FileSecurityDefender:
                     file.write(signature)
                 self.download_button.config(state=tk.NORMAL)
         except Exception as e:
-            self.log_error(f"ファイルの署名中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred during file signing: {str(e)}")
 
     def download_file(self):
         try:
@@ -216,13 +213,13 @@ class FileSecurityDefender:
                         decrypted_file_path = os.path.join(output_folder, filename)
                         with open(decrypted_file_path, 'wb') as decrypted_file:
                             decrypted_file.write(decrypted_data)
-                        self.log_message("ファイルをダウンロードしました。")
+                        self.log_message("File downloaded successfully.")
                     else:
-                        self.log_error("ダウンロードをキャンセルしました.")
+                        self.log_error("Download canceled.")
                 else:
-                    self.log_error("署名の検証に失敗しました.")
+                    self.log_error("Signature verification failed.")
         except Exception as e:
-            self.log_error(f"ファイルのダウンロード中にエラーが発生しました: {str(e)}")
+            self.log_error(f"An error occurred during file download: {str(e)}")
 
     def verify_signature(self, data, signature):
         try:
@@ -240,11 +237,11 @@ class FileSecurityDefender:
 
     def log_message(self, message):
         self.logger.info(message)
-        messagebox.showinfo("成功", message)
+        messagebox.showinfo("Success", message)
 
     def log_error(self, message):
         self.logger.error(message)
-        messagebox.showerror("エラー", message)
+        messagebox.showerror("Error", message)
 
     def mainloop(self):
         self.root.mainloop()
