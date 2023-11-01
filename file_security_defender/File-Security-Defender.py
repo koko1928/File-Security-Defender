@@ -24,7 +24,6 @@ class FileSecurityDefender:
         self.key = None
         self.backup_dir = "key_backup"
 
-        # ロギング設定
         self.setup_logging()
         self.logger = logging.getLogger(__name)
 
