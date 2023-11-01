@@ -21,9 +21,9 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
+File_Security_Defender.egg-info/
 .installed.cfg
-*.egg
+File_Security_Defender.egg
 MANIFEST
 
 # PyInstaller
