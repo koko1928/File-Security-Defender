@@ -14,6 +14,9 @@ import logging
 import re
 import sys
 
+# ロギングの初期設定
+logging.basicConfig(filename="app.log", level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
 class FileSecurityDefender:
     def __init__(self, root):
         self.root = root
@@ -24,15 +27,10 @@ class FileSecurityDefender:
         self.key = None
         self.backup_dir = "key_backup"
 
-        self.setup_logging()
         self.logger = logging.getLogger(__name)
 
         self.setup_ui()
         self.load_or_generate_key_pair()
-
-    def setup_logging(self):
-        log_filename = "app.log"
-        logging.basicConfig(filename=log_filename, level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     def setup_ui(self):
         self.upload_button = tk.Button(self.root, text="Upload File", command=self.upload_file)
