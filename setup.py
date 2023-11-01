@@ -1,4 +1,3 @@
-
 # Author: Yusuke Toyama <Ym5saGJtTmhkQT09@protonmail.com>
 # Copyright (c)  2023 Yusuke Toyama
 # License: MIT License
@@ -11,6 +10,11 @@ version = {}
 with open(init_py) as f:
     exec(f.read(), version)
 project_version = version["__version__"]
+
+extras = {
+    'gui': ["tkinter"],
+    'crypto': ["cryptography"],
+}
 
 setup(
     name="File-Security-Defender",
@@ -26,7 +30,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "cryptography",
-        "tkinter",
     ],
     extras_require=extras,
     packages=find_packages(),
