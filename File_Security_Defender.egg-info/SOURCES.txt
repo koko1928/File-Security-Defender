@@ -1,0 +1,10 @@
+LICENSE
+README.rst
+setup.py
+File_Security_Defender.egg-info/PKG-INFO
+File_Security_Defender.egg-info/SOURCES.txt
+File_Security_Defender.egg-info/dependency_links.txt
+File_Security_Defender.egg-info/requires.txt
+File_Security_Defender.egg-info/top_level.txt
+file_security_defender/__init__.py
+file_security_defender/main.py
