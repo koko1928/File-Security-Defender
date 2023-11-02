@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from tkinter.simpledialog import askstring
+from tkinter import filedialog, messagebox, simpledialog
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -14,9 +13,6 @@ import logging
 import re
 import sys
 
-# ロギングの初期設定
-logging.basicConfig(filename="app.log", level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
 class FileSecurityDefender:
     def __init__(self, root):
         self.root = root
@@ -27,10 +23,15 @@ class FileSecurityDefender:
         self.key = None
         self.backup_dir = "key_backup"
 
+        self.setup_logging()
         self.logger = logging.getLogger(__name)
 
         self.setup_ui()
         self.load_or_generate_key_pair()
+
+    def setup_logging(self):
+        log_filename = "app.log"
+        logging.basicConfig(filename=log_filename, level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     def setup_ui(self):
         self.upload_button = tk.Button(self.root, text="Upload File", command=self.upload_file)
@@ -61,7 +62,7 @@ class FileSecurityDefender:
                 sys.exit(1)
 
     def get_secure_password(self):
-        password = askstring("Password Input", "Please enter your password: ", show='*')
+        password = simpledialog.askstring("Password Input", "Please enter your password: ", show='*')
         if self.is_strong_password(password):
             return password
         else:
