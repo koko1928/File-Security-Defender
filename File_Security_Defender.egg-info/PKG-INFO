@@ -22,9 +22,12 @@ Classifier: Topic :: Security
 Classifier: Topic :: Software Development
 Classifier: Topic :: Utilities
 Requires-Python: >=3.6
-Provides-Extra: gui
-Provides-Extra: crypto
 License-File: LICENSE
+Requires-Dist: cryptography
+Provides-Extra: gui
+Requires-Dist: tkinter; extra == "gui"
+Provides-Extra: crypto
+Requires-Dist: cryptography; extra == "crypto"
 
 # File Security Defender
 
