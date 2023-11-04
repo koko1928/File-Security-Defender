@@ -13,7 +13,6 @@ import logging
 import re
 import sys
 
-# ロギングの初期設定
 logging.basicConfig(filename="app.log", level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 class FileSecurityDefender:
