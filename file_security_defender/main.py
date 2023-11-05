@@ -1,10 +1,14 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.fernet import Fernet
 import os
+import base64
+import shutil
 import logging
 import re
 import sys
@@ -15,12 +19,13 @@ class FileSecurityDefender:
         self.root.title("File Security Defender")
         self.password = None
         self.selected_file = None
+        self.salt = None
         self.key = None
-        self.backup_dir = "key_backup"
         self.private_key = None
+        self.backup_dir = "key_backup"
 
         self.setup_logging()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("FileSecurityDefender")
 
         self.setup_ui()
         self.load_or_generate_key_pair()
@@ -33,11 +38,11 @@ class FileSecurityDefender:
         self.upload_button = tk.Button(self.root, text="Upload File", command=self.upload_file)
         self.upload_button.pack()
 
-        self.download_button = tk.Button(self.root, text="Download Decrypted File", state=tk.DISABLED, command=self.download_decrypted_file)
-        self.download_button.pack()
+        self.encrypt_button = tk.Button(self.root, text="Encrypt & Sign File", state=tk.DISABLED, command=self.encrypt_and_sign_file)
+        self.encrypt_button.pack()
 
-        self.logout_button = tk.Button(self.root, text="Log out", command=self.logout)
-        self.logout_button.pack()
+        self.download_button = tk.Button(self.root, text="Download & Verify File", state=tk.DISABLED, command=self.download_and_verify_file)
+        self.download_button.pack()
 
         self.filename_label = tk.Label(self.root, text="")
         self.filename_label.pack()
@@ -47,8 +52,7 @@ class FileSecurityDefender:
             self.password = self.get_secure_password()
             if self.password:
                 if os.path.exists("private_key.pem"):
-                    if not self.load_key(self.password):
-                        self.log_error("Incorrect password. Please log out and try again.")
+                    self.load_key(self.password)
                 else:
                     self.generate_key_pair(self.password)
             else:
@@ -78,7 +82,16 @@ class FileSecurityDefender:
 
     def generate_key_pair(self, password):
         try:
-            self.key = Fernet.generate_key()
+            self.salt = os.urandom(16)
+
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                iterations=100000,
+                salt=self.salt,
+                length=32
+            )
+            self.key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+
             private_key = rsa.generate_private_key(
                 public_exponent=65537,
                 key_size=2048,
@@ -88,13 +101,14 @@ class FileSecurityDefender:
             pem = private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.BestAvailableEncryption(password.encode())
+                encryption_algorithm=serialization.BestAvailableEncryption(self.key)
             )
 
             with open("private_key.pem", "wb") as key_file:
                 key_file.write(pem)
 
             self.private_key = private_key
+
             self.backup_key(password)
         except Exception as e:
             self.log_error(f"An error occurred during key pair generation: {str(e)}")
@@ -104,16 +118,15 @@ class FileSecurityDefender:
         try:
             with open("private_key.pem", "rb") as key_file:
                 pem = key_file.read()
-                private_key = serialization.load_pem_private_key(
+                private_key = load_pem_private_key(
                     pem,
                     password=password.encode(),
                     backend=default_backend()
                 )
             self.private_key = private_key
-            return True
         except Exception as e:
             self.log_error(f"An error occurred while loading the private key: {str(e)}")
-            return False
+            sys.exit(1)
 
     def backup_key(self, password):
         try:
@@ -125,15 +138,24 @@ class FileSecurityDefender:
             if os.path.exists(key_backup_file):
                 os.remove(key_backup_file)
 
-            encryption_algorithm = serialization.BestAvailableEncryption(password.encode())
-            pem = self.private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=encryption_algorithm
-            )
+            shutil.copy("private_key.pem", key_backup_file)
 
-            with open(key_backup_file, "wb") as key_file:
-                key_file.write(pem)
+            with open(key_backup_file, "rb") as key_file:
+                pem = key_file.read()
+                private_key = load_pem_private_key(
+                    pem,
+                    password=password.encode(),
+                    backend=default_backend()
+                )
+                encryption_algorithm = serialization.BestAvailableEncryption(self.key)
+                pem = private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=encryption_algorithm
+                )
+
+                with open(key_backup_file, "wb") as key_file:
+                    key_file.write(pem)
         except Exception as e:
             self.log_error(f"Backup failed: {str(e)}")
 
@@ -143,46 +165,66 @@ class FileSecurityDefender:
             if file_path:
                 self.selected_file = file_path
                 self.filename_label.config(text=f"Selected File: {file_path}")
-                self.download_button.config(state=tk.NORMAL)
+                self.encrypt_button.config(state=tk.NORMAL)
         except Exception as e:
             self.log_error(f"An error occurred during file upload: {str(e)}")
 
-    def download_decrypted_file(self):
+    def encrypt_and_sign_file(self):
         try:
             with open(self.selected_file, 'rb') as file:
                 data = file.read()
-                if self.decrypt_and_verify(data):
-                    self.log_message("File decrypted and verified successfully.")
-                else:
-                    self.log_error("Decryption or verification failed.")
-        except Exception as e:
-            self.log_error(f"An error occurred during file decryption: {str(e)}")
+                fernet = Fernet(self.key)
+                encrypted_data = fernet.encrypt(data)
 
-    def decrypt_and_verify(self, data):
+                signature = self.private_key.sign(
+                    encrypted_data,
+                    padding.PSS(
+                        mgf=padding.MGF1(hashes.SHA256()),
+                        salt_length=padding.PSS.MAX_LENGTH
+                    ),
+                    hashes.SHA256()
+                )
+
+                encrypted_file_path = self.selected_file + ".enc"
+                with open(encrypted_file_path, 'wb') as encrypted_file:
+                    encrypted_file.write(encrypted_data + signature)
+
+                self.download_button.config(state=tk.NORMAL)
+                self.log_message("File encrypted and signed successfully.")
+        except Exception as e:
+            self.log_error(f"An error occurred during file encryption and signing: {str(e)}")
+
+    def download_and_verify_file(self):
         try:
-            fernet = Fernet(self.key)
-            decrypted_data = fernet.decrypt(data)
-            output_folder = filedialog.askdirectory()
-            if output_folder:
-                filename = os.path.basename(self.selected_file)
-                decrypted_file_path = os.path.join(output_folder, filename)
-                with open(decrypted_file_path, 'wb') as decrypted_file:
-                    decrypted_file.write(decrypted_data)
-                return True
-            else:
-                self.log_error("Download canceled.")
-                return False
-        except Exception as e:
-            self.log_error(f"An error occurred during decryption or verification: {str(e)}")
-            return False
+            with open(self.selected_file, 'rb') as file:
+                data = file.read()
+                encrypted_data, signature = data[:-256], data[-256:]
+                fernet = Fernet(self.key)
+                decrypted_data = fernet.decrypt(encrypted_data)
 
-    def logout(self):
-        self.password = None
-        self.key = None
-        self.private_key = None
-        self.filename_label.config(text="")
-        self.download_button.config(state=tk.DISABLED)
-        self.log_message("Logged out. You can log in with a different password.")
+                try:
+                    self.private_key.verify(
+                        signature,
+                        encrypted_data,
+                        padding.PSS(
+                            mgf=padding.MGF1(hashes.SHA256()),
+                            salt_length=padding.PSS.MAX_LENGTH
+                        ),
+                        hashes.SHA256()
+                    )
+                    output_folder = filedialog.askdirectory()
+                    if output_folder:
+                        filename = os.path.basename(self.selected_file)
+                        decrypted_file_path = os.path.join(output_folder, filename)
+                        with open(decrypted_file_path, 'wb') as decrypted_file:
+                            decrypted_file.write(decrypted_data)
+                        self.log_message("File downloaded and verified successfully.")
+                    else:
+                        self.log_error("Download canceled.")
+                except Exception as e:
+                    self.log_error("Signature verification failed.")
+        except Exception as e:
+            self.log_error(f"An error occurred during file download and verification: {str(e)}")
 
     def log_message(self, message):
         self.logger.info(message)
@@ -190,7 +232,10 @@ class FileSecurityDefender:
 
     def log_error(self, message):
         self.logger.error(message)
-        messagebox.showerror("Error", "An error occurred. Please check the log for details.")
+        messagebox.showerror("Error", message)
+
+    def mainloop(self):
+        self.root.mainloop()
 
 if __name__ == "__main__":
     root = tk.Tk()
